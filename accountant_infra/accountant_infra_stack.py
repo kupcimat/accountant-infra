@@ -1,11 +1,18 @@
-from aws_cdk import aws_s3 as s3, core as cdk
+from aws_cdk import (
+    aws_ec2 as ec2,
+    aws_ecs as ecs,
+    aws_ecs_patterns as ecs_patterns,
+    aws_s3 as s3,
+    core as cdk,
+)
 
 
 class AccountantInfraStack(cdk.Stack):
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        bucket_uploads = s3.Bucket(
+        # S3 buckets
+        s3.Bucket(
             self,
             "accountant-document-uploads",
             bucket_name="accountant-document-uploads",
@@ -14,7 +21,7 @@ class AccountantInfraStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             versioned=False,
         )
-        bucket_results = s3.Bucket(
+        s3.Bucket(
             self,
             "accountant-document-results",
             bucket_name="accountant-document-results",
@@ -22,4 +29,27 @@ class AccountantInfraStack(cdk.Stack):
             encryption=s3.BucketEncryption.S3_MANAGED,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             versioned=False,
+        )
+
+        # Fargate services
+        vpc = ec2.Vpc(self, "accountant-vpc", max_azs=3)
+
+        cluster = ecs.Cluster(
+            self, "accountant-cluster", cluster_name="accountant-cluster", vpc=vpc
+        )
+
+        ecs_patterns.ApplicationLoadBalancedFargateService(
+            self,
+            "accountant-web-service",
+            service_name="accountant-web-service",
+            cluster=cluster,
+            desired_count=1,
+            cpu=256,
+            memory_limit_mib=512,
+            public_load_balancer=True,
+            task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                image=ecs.ContainerImage.from_registry("kupcimat/accountant-web"),
+                container_port=80,
+                enable_logging=True,
+            ),
         )
