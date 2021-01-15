@@ -27,6 +27,7 @@ class AccountantInfraStack(cdk.Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
             versioned=False,
         )
         bucket_results = s3.Bucket(
@@ -36,6 +37,7 @@ class AccountantInfraStack(cdk.Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
             versioned=False,
         )
 
