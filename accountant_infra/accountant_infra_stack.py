@@ -2,6 +2,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns,
+    aws_iam as iam,
     aws_s3 as s3,
     core as cdk,
 )
@@ -11,8 +12,15 @@ class AccountantInfraStack(cdk.Stack):
     def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        # IAM Roles
+        role_web = iam.Role(
+            self,
+            "accountant-web-service-role",
+            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+        )
+
         # S3 buckets
-        s3.Bucket(
+        bucket_uploads = s3.Bucket(
             self,
             "accountant-document-uploads",
             bucket_name="accountant-document-uploads",
@@ -21,7 +29,7 @@ class AccountantInfraStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             versioned=False,
         )
-        s3.Bucket(
+        bucket_results = s3.Bucket(
             self,
             "accountant-document-results",
             bucket_name="accountant-document-results",
@@ -30,6 +38,9 @@ class AccountantInfraStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             versioned=False,
         )
+
+        bucket_uploads.grant_write(role_web)
+        bucket_results.grant_read(role_web)
 
         # Fargate services
         vpc = ec2.Vpc(self, "accountant-vpc", max_azs=3)
@@ -51,5 +62,6 @@ class AccountantInfraStack(cdk.Stack):
                 image=ecs.ContainerImage.from_registry("kupcimat/accountant-web"),
                 container_port=80,
                 enable_logging=True,
+                task_role=role_web,
             ),
         )
