@@ -27,7 +27,6 @@ class AccountantInfraStack(cdk.Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             removal_policy=cdk.RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
             versioned=False,
         )
         bucket_results = s3.Bucket(
@@ -37,11 +36,11 @@ class AccountantInfraStack(cdk.Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             removal_policy=cdk.RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
             versioned=False,
         )
 
-        bucket_uploads.grant_write(role_web)
+        bucket_uploads.grant_put(role_web)
+        bucket_uploads.grant_read(role_web)
         bucket_results.grant_read(role_web)
 
         # Fargate services
