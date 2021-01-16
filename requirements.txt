@@ -4,4 +4,5 @@ aws-cdk.aws-ecs
 aws-cdk.aws-ecs-patterns
 aws-cdk.aws-iam
 aws-cdk.aws-s3
+aws-cdk.aws-sqs
 black

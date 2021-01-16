@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_ecs_patterns as ecs_patterns,
     aws_iam as iam,
     aws_s3 as s3,
+    aws_sqs as sqs,
     core as cdk,
 )
 
@@ -50,6 +51,14 @@ class AccountantInfraStack(cdk.Stack):
             self, "accountant-cluster", cluster_name="accountant-cluster", vpc=vpc
         )
 
+        queue = sqs.Queue(
+            self,
+            "accountant-worker-queue",
+            queue_name="accountant-worker-queue",
+            encryption=sqs.QueueEncryption.KMS_MANAGED,
+            visibility_timeout=cdk.Duration.seconds(60),
+        )
+
         ecs_patterns.ApplicationLoadBalancedFargateService(
             self,
             "accountant-web-service",
@@ -65,4 +74,16 @@ class AccountantInfraStack(cdk.Stack):
                 enable_logging=True,
                 task_role=role_web,
             ),
+        )
+        ecs_patterns.QueueProcessingFargateService(
+            self,
+            "accountant-worker-service",
+            service_name="accountant-worker-service",
+            cluster=cluster,
+            desired_task_count=1,
+            cpu=256,
+            memory_limit_mib=512,
+            queue=queue,
+            image=ecs.ContainerImage.from_registry("kupcimat/accountant-worker"),
+            enable_logging=True,
         )
