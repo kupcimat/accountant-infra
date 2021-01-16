@@ -56,7 +56,8 @@ class AccountantInfraStack(cdk.Stack):
             "accountant-worker-queue",
             queue_name="accountant-worker-queue",
             encryption=sqs.QueueEncryption.KMS_MANAGED,
-            visibility_timeout=cdk.Duration.seconds(60),
+            receive_message_wait_time=cdk.Duration.seconds(10),
+            visibility_timeout=cdk.Duration.seconds(30),
         )
 
         ecs_patterns.ApplicationLoadBalancedFargateService(
