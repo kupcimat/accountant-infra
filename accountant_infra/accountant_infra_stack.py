@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_ecs_patterns as ecs_patterns,
     aws_iam as iam,
     aws_s3 as s3,
+    aws_s3_notifications as s3_notifications,
     aws_sqs as sqs,
     core as cdk,
 )
@@ -18,6 +19,17 @@ class AccountantInfraStack(cdk.Stack):
             self,
             "accountant-web-service-role",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+        )
+
+        # SQS Queue
+        queue = sqs.Queue(
+            self,
+            "accountant-worker-queue",
+            queue_name="accountant-worker-queue",
+            # TODO https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#grant-destinations-permissions-to-s3
+            # encryption=sqs.QueueEncryption.KMS_MANAGED,
+            receive_message_wait_time=cdk.Duration.seconds(10),
+            visibility_timeout=cdk.Duration.seconds(30),
         )
 
         # S3 buckets
@@ -42,6 +54,9 @@ class AccountantInfraStack(cdk.Stack):
 
         bucket_uploads.grant_put(role_web)
         bucket_uploads.grant_read(role_web)
+        bucket_uploads.add_object_created_notification(
+            dest=s3_notifications.SqsDestination(queue)
+        )
         bucket_results.grant_read(role_web)
 
         # Fargate services
@@ -49,15 +64,6 @@ class AccountantInfraStack(cdk.Stack):
 
         cluster = ecs.Cluster(
             self, "accountant-cluster", cluster_name="accountant-cluster", vpc=vpc
-        )
-
-        queue = sqs.Queue(
-            self,
-            "accountant-worker-queue",
-            queue_name="accountant-worker-queue",
-            encryption=sqs.QueueEncryption.KMS_MANAGED,
-            receive_message_wait_time=cdk.Duration.seconds(10),
-            visibility_timeout=cdk.Duration.seconds(30),
         )
 
         ecs_patterns.ApplicationLoadBalancedFargateService(
