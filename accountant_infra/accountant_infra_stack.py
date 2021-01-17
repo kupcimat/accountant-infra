@@ -1,5 +1,6 @@
 from aws_cdk import (
     aws_ec2 as ec2,
+    aws_ecr as ecr,
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns,
     aws_iam as iam,
@@ -58,6 +59,14 @@ class AccountantInfraStack(cdk.Stack):
             dest=s3_notifications.SqsDestination(queue)
         )
         bucket_results.grant_read(role_web)
+
+        # ECR repositories
+        ecr.Repository(
+            self, "accountant-web-repository", repository_name="accountant-web"
+        )
+        ecr.Repository(
+            self, "accountant-worker-repository", repository_name="accountant-worker"
+        )
 
         # Fargate services
         vpc = ec2.Vpc(self, "accountant-vpc", max_azs=3)
