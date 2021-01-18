@@ -22,13 +22,6 @@ class AccountantInfraStack(cdk.Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # IAM Roles
-        role_web = iam.Role(
-            self,
-            "accountant-web-service-role",
-            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-        )
-
         # SQS Queue
         queue = sqs.Queue(
             self,
@@ -50,6 +43,9 @@ class AccountantInfraStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             versioned=False,
         )
+        bucket_uploads.add_object_created_notification(
+            dest=s3_notifications.SqsDestination(queue)
+        )
         bucket_results = s3.Bucket(
             self,
             "accountant-document-results",
@@ -60,13 +56,6 @@ class AccountantInfraStack(cdk.Stack):
             versioned=False,
         )
 
-        bucket_uploads.grant_put(role_web)
-        bucket_uploads.grant_read(role_web)
-        bucket_uploads.add_object_created_notification(
-            dest=s3_notifications.SqsDestination(queue)
-        )
-        bucket_results.grant_read(role_web)
-
         # Fargate services
         vpc = ec2.Vpc(self, "accountant-vpc", max_azs=3)
 
@@ -74,7 +63,7 @@ class AccountantInfraStack(cdk.Stack):
             self, "accountant-cluster", cluster_name="accountant-cluster", vpc=vpc
         )
 
-        ecs_patterns.ApplicationLoadBalancedFargateService(
+        service_web = ecs_patterns.ApplicationLoadBalancedFargateService(
             self,
             "accountant-web-service",
             service_name="accountant-web-service",
@@ -87,10 +76,15 @@ class AccountantInfraStack(cdk.Stack):
                 image=ecs.ContainerImage.from_ecr_repository(repository_web),
                 container_port=80,
                 enable_logging=True,
-                task_role=role_web,
             ),
         )
-        ecs_patterns.QueueProcessingFargateService(
+        # web permissions
+        service_web_role = service_web.task_definition.task_role
+        bucket_uploads.grant_put(service_web_role)
+        bucket_uploads.grant_read(service_web_role)
+        bucket_results.grant_read(service_web_role)
+
+        service_worker = ecs_patterns.QueueProcessingFargateService(
             self,
             "accountant-worker-service",
             service_name="accountant-worker-service",
@@ -102,3 +96,7 @@ class AccountantInfraStack(cdk.Stack):
             image=ecs.ContainerImage.from_ecr_repository(repository_worker),
             enable_logging=True,
         )
+        # worker permissions
+        service_worker_role = service_worker.task_definition.task_role
+        bucket_uploads.grant_read(service_worker_role)
+        bucket_results.grant_put(service_worker_role)
