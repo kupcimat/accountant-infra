@@ -3,7 +3,6 @@ from aws_cdk import (
     aws_ecr as ecr,
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns,
-    aws_iam as iam,
     aws_s3 as s3,
     aws_s3_notifications as s3_notifications,
     aws_sqs as sqs,

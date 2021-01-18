@@ -3,7 +3,6 @@ aws-cdk.aws-ec2
 aws-cdk.aws-ecr
 aws-cdk.aws-ecs
 aws-cdk.aws-ecs-patterns
-aws-cdk.aws-iam
 aws-cdk.aws-s3
 aws-cdk.aws-s3-notifications
 aws-cdk.aws-sqs
