@@ -61,10 +61,10 @@ class AccountantInfraStack(cdk.Stack):
         bucket_results.grant_read(role_web)
 
         # ECR repositories
-        ecr.Repository(
+        repository_web = ecr.Repository(
             self, "accountant-web-repository", repository_name="accountant-web"
         )
-        ecr.Repository(
+        repository_worker = ecr.Repository(
             self, "accountant-worker-repository", repository_name="accountant-worker"
         )
 
@@ -85,7 +85,7 @@ class AccountantInfraStack(cdk.Stack):
             memory_limit_mib=512,
             public_load_balancer=True,
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                image=ecs.ContainerImage.from_registry("kupcimat/accountant-web"),
+                image=ecs.ContainerImage.from_ecr_repository(repository_web),
                 container_port=80,
                 enable_logging=True,
                 task_role=role_web,
@@ -100,6 +100,6 @@ class AccountantInfraStack(cdk.Stack):
             cpu=256,
             memory_limit_mib=512,
             queue=queue,
-            image=ecs.ContainerImage.from_registry("kupcimat/accountant-worker"),
+            image=ecs.ContainerImage.from_ecr_repository(repository_worker),
             enable_logging=True,
         )
