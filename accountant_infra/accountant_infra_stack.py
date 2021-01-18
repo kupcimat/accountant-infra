@@ -12,7 +12,14 @@ from aws_cdk import (
 
 
 class AccountantInfraStack(cdk.Stack):
-    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self,
+        scope: cdk.Construct,
+        construct_id: str,
+        repository_web: ecr.Repository,
+        repository_worker: ecr.Repository,
+        **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # IAM Roles
@@ -59,14 +66,6 @@ class AccountantInfraStack(cdk.Stack):
             dest=s3_notifications.SqsDestination(queue)
         )
         bucket_results.grant_read(role_web)
-
-        # ECR repositories
-        repository_web = ecr.Repository(
-            self, "accountant-web-repository", repository_name="accountant-web"
-        )
-        repository_worker = ecr.Repository(
-            self, "accountant-worker-repository", repository_name="accountant-worker"
-        )
 
         # Fargate services
         vpc = ec2.Vpc(self, "accountant-vpc", max_azs=3)
