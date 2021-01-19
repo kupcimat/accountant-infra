@@ -72,7 +72,9 @@ class AccountantInfraStack(cdk.Stack):
             memory_limit_mib=512,
             public_load_balancer=True,
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                family="accountant-web-task",
                 image=ecs.ContainerImage.from_ecr_repository(repository_web),
+                container_name="accountant-web-container",
                 container_port=80,
                 enable_logging=True,
             ),
@@ -92,7 +94,9 @@ class AccountantInfraStack(cdk.Stack):
             cpu=256,
             memory_limit_mib=512,
             queue=queue,
+            family="accountant-worker-task",
             image=ecs.ContainerImage.from_ecr_repository(repository_worker),
+            container_name="accountant-worker-container",
             enable_logging=True,
         )
         # worker permissions
